@@ -115,4 +115,34 @@ class SqlBriteTableDetectorTest {
                         "        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
                         "1 errors, 0 warnings\n")
     }
+
+    @Test fun usingInvalidTableNameWithArgs() {
+        lint().files(
+                BRITE_DATABASE_STUB,
+                java("""
+                    package test.pkg;
+
+                    import com.squareup.sqlbrite3.BriteDatabase;
+
+                    public class Test {
+                        private static final String TABLE = "actual_table";
+                        private static final String QUERY = "SELECT * from other_table WHERE id = ?";
+
+                        public void test() {
+                            BriteDatabase db = new BriteDatabase();
+                            db.createQuery(TABLE, QUERY, "id");
+                        }
+
+                    }
+                """.trimIndent()))
+                .issues(SqlBriteTableDetector.ISSUE)
+                .run()
+                .expect("src/test/pkg/Test.java:11: " +
+                        "Error: Invalid table name in query statement. Query statement, " +
+                        "'SELECT * from other_table WHERE id = ?' should contain table name :  actual_table [SqlBriteTableName]\n" +
+                        "        db.createQuery(TABLE, QUERY, \"id\");\n" +
+                        "        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
+                        "1 errors, 0 warnings\n")
+    }
+
 }

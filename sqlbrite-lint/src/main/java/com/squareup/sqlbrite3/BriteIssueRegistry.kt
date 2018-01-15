@@ -19,5 +19,5 @@ import com.android.tools.lint.client.api.IssueRegistry
 
 class BriteIssueRegistry : IssueRegistry() {
 
-  override fun getIssues() = listOf(SqlBriteArgCountDetector.ISSUE)
+  override fun getIssues() = listOf(SqlBriteArgCountDetector.ISSUE, SqlBriteTableDetector.ISSUE)
 }

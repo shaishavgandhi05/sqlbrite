@@ -23,9 +23,9 @@ import org.junit.Test
 
 class SqlBriteTableDetectorTest {
 
-    companion object {
-        private val BRITE_DATABASE_STUB = TestFiles.java(
-                """
+  companion object {
+    private val BRITE_DATABASE_STUB = TestFiles.java(
+            """
       package com.squareup.sqlbrite3;
 
       public final class BriteDatabase {
@@ -36,113 +36,118 @@ class SqlBriteTableDetectorTest {
 
       }
       """.trimIndent()
-        )
-    }
+    )
+  }
 
-    @Test fun usingValidTableName() {
-        lint().files(
-                BRITE_DATABASE_STUB,
-                java("""
-                    package test.pkg;
+  @Test
+  fun usingValidTableName() {
+    lint().files(
+            BRITE_DATABASE_STUB,
+            java("""
+              package test.pkg;
+              import com.squareup.sqlbrite3.BriteDatabase;
 
-                    import com.squareup.sqlbrite3.BriteDatabase;
+              public class Test {
 
-                    public class Test {
-                        private static final String TABLE = "actual_table";
-                        private static final String QUERY = "SELECT * from " + TABLE;
+                private static final String TABLE = "actual_table";
+                private static final String QUERY = "SELECT * from " + TABLE;
 
-                        public void test() {
-                            BriteDatabase db = new BriteDatabase();
-                            db.createQuery(TABLE, QUERY);
-                        }
+                public void test() {
+                  BriteDatabase db = new BriteDatabase();
+                  db.createQuery(TABLE, QUERY);
+                }
 
-                    }
-                """.trimIndent()))
-                .issues(SqlBriteTableDetector.ISSUE)
-                .run()
-                .expectClean()
-    }
+              }
+              """.trimIndent()))
+            .issues(SqlBriteTableDetector.ISSUE)
+            .run()
+            .expectClean()
+  }
 
-    @Test fun usingValidTableNameWithArgs() {
-        lint().files(
-                BRITE_DATABASE_STUB,
-                java("""
-                    package test.pkg;
+  @Test
+  fun usingValidTableNameWithArgs() {
+    lint().files(
+            BRITE_DATABASE_STUB,
+            java("""
+              package test.pkg;
 
-                    import com.squareup.sqlbrite3.BriteDatabase;
+              import com.squareup.sqlbrite3.BriteDatabase;
 
-                    public class Test {
-                        private static final String TABLE = "actual_table";
-                        private static final String QUERY = "SELECT * from " + TABLE + " WHERE id = ?";
+              public class Test {
 
-                        public void test() {
-                            BriteDatabase db = new BriteDatabase();
-                            db.createQuery(TABLE, QUERY, "id");
-                        }
+                private static final String TABLE = "actual_table";
+                private static final String QUERY = "SELECT * from " + TABLE + " WHERE id = ?";
 
-                    }
-                """.trimIndent()))
-                .issues(SqlBriteTableDetector.ISSUE)
-                .run()
-                .expectClean()
-    }
+                public void test() {
+                  BriteDatabase db = new BriteDatabase();
+                  db.createQuery(TABLE, QUERY, "id");
+                }
 
-    @Test fun usingInvalidTableName() {
-        lint().files(
-                BRITE_DATABASE_STUB,
-                java("""
-                    package test.pkg;
+              }
+              """.trimIndent()))
+            .issues(SqlBriteTableDetector.ISSUE)
+            .run()
+            .expectClean()
+  }
 
-                    import com.squareup.sqlbrite3.BriteDatabase;
+  @Test
+  fun usingInvalidTableName() {
+    lint().files(
+            BRITE_DATABASE_STUB,
+            java("""
+              package test.pkg;
 
-                    public class Test {
-                        private static final String TABLE = "actual_table";
-                        private static final String QUERY = "SELECT * from other_table";
+              import com.squareup.sqlbrite3.BriteDatabase;
 
-                        public void test() {
-                            BriteDatabase db = new BriteDatabase();
-                            db.createQuery(TABLE, QUERY);
-                        }
+              public class Test {
+                private static final String TABLE = "actual_table";
+                private static final String QUERY = "SELECT * from other_table";
 
-                    }
-                """.trimIndent()))
-                .issues(SqlBriteTableDetector.ISSUE)
-                .run()
-                .expect("src/test/pkg/Test.java:11: " +
-                        "Error: Invalid table name in query statement. Query statement, " +
-                        "'SELECT * from other_table' should contain table name :  actual_table [SqlBriteTableName]\n" +
-                        "        db.createQuery(TABLE, QUERY);\n" +
-                        "        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
-                        "1 errors, 0 warnings\n")
-    }
+                public void test() {
+                  BriteDatabase db = new BriteDatabase();
+                  db.createQuery(TABLE, QUERY);
+                }
 
-    @Test fun usingInvalidTableNameWithArgs() {
-        lint().files(
-                BRITE_DATABASE_STUB,
-                java("""
-                    package test.pkg;
+              }
+              """.trimIndent()))
+            .issues(SqlBriteTableDetector.ISSUE)
+            .run()
+            .expect("src/test/pkg/Test.java:11: " +
+                    "Error: Invalid table name in query statement. Query statement, " +
+                    "'SELECT * from other_table' should contain table name :  actual_table [SqlBriteTableName]\n" +
+                    "    db.createQuery(TABLE, QUERY);\n" +
+                    "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
+                    "1 errors, 0 warnings\n")
+  }
 
-                    import com.squareup.sqlbrite3.BriteDatabase;
+  @Test
+  fun usingInvalidTableNameWithArgs() {
+    lint().files(
+            BRITE_DATABASE_STUB,
+            java("""
+              package test.pkg;
 
-                    public class Test {
-                        private static final String TABLE = "actual_table";
-                        private static final String QUERY = "SELECT * from other_table WHERE id = ?";
+              import com.squareup.sqlbrite3.BriteDatabase;
 
-                        public void test() {
-                            BriteDatabase db = new BriteDatabase();
-                            db.createQuery(TABLE, QUERY, "id");
-                        }
+              public class Test {
+                private static final String TABLE = "actual_table";
+                private static final String QUERY = "SELECT * from other_table WHERE id = ?";
 
-                    }
-                """.trimIndent()))
-                .issues(SqlBriteTableDetector.ISSUE)
-                .run()
-                .expect("src/test/pkg/Test.java:11: " +
-                        "Error: Invalid table name in query statement. Query statement, " +
-                        "'SELECT * from other_table WHERE id = ?' should contain table name :  actual_table [SqlBriteTableName]\n" +
-                        "        db.createQuery(TABLE, QUERY, \"id\");\n" +
-                        "        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
-                        "1 errors, 0 warnings\n")
-    }
+                public void test() {
+                  BriteDatabase db = new BriteDatabase();
+                  db.createQuery(TABLE, QUERY, "id");
+                }
+
+              }
+              """.trimIndent()))
+            .issues(SqlBriteTableDetector.ISSUE)
+            .run()
+            .expect("src/test/pkg/Test.java:11: " +
+                    "Error: Invalid table name in query statement. Query statement, " +
+                    "'SELECT * from other_table WHERE id = ?' should contain table name :  actual_table [SqlBriteTableName]\n" +
+                    "    db.createQuery(TABLE, QUERY, \"id\");\n" +
+                    "    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
+                    "1 errors, 0 warnings\n")
+  }
 
 }

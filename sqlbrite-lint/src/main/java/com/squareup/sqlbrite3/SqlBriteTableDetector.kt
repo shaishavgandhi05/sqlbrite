@@ -32,42 +32,41 @@ private const val CREATE_QUERY_METHOD_NAME = "createQuery"
 private const val BRITE_DATABASE = "com.squareup.sqlbrite3.BriteDatabase"
 
 class SqlBriteTableDetector : Detector(), Detector.UastScanner {
+  companion object {
+    val ISSUE = Issue.create("SqlBriteTableName",
+            "One or more of the tables provided is not in the query statement",
+            "All the tables passed in the first parameter must exist in the query statement",
+            Category.MESSAGES,
+            8,
+            Severity.ERROR,
+            Implementation(SqlBriteTableDetector::class.java, EnumSet.of(JAVA_FILE, TEST_SOURCES))
+    )
+  }
 
-    companion object {
-        val ISSUE = Issue.create("SqlBriteTableName",
-                "One or more of the tables provided is not in the query statement",
-                "All the tables passed in the first parameter must exist in the query statement",
-                Category.MESSAGES,
-                8,
-                Severity.ERROR,
-                Implementation(SqlBriteTableDetector::class.java, EnumSet.of(JAVA_FILE, TEST_SOURCES))
-                )
-    }
+  override fun getApplicableMethodNames() = listOf(CREATE_QUERY_METHOD_NAME)
 
-    override fun getApplicableMethodNames() = listOf(CREATE_QUERY_METHOD_NAME)
+  override fun visitMethod(context: JavaContext, node: UCallExpression, method: PsiMethod) {
+    val evaluator = context.evaluator
 
-    override fun visitMethod(context: JavaContext, node: UCallExpression, method: PsiMethod) {
-        val evaluator = context.evaluator
+    if (evaluator.isMemberInClass(method, BRITE_DATABASE)) {
+      // Skip the signature createQuery(DatabaseQuery query)
+      if (node.valueArgumentCount < 2) return
 
-        if (evaluator.isMemberInClass(method, BRITE_DATABASE)) {
-            // Skip the signature createQuery(DatabaseQuery query)
-            if (node.valueArgumentCount < 2) return
+      val arguments = node.valueArguments
 
-            val arguments = node.valueArguments
-
-            val tableName = evaluateString(context, arguments[0], true)
-            val query = evaluateString(context, arguments[1], true)
+      val tableName = evaluateString(context, arguments[0], true)
+      val query = evaluateString(context, arguments[1], true)
 
 
-            // Skipping list of tables for now
-            if (tableName != null && query != null) {
-                if (!query.toString().contains(tableName.toString(), true)) {
-                    context.report(ISSUE, node, context.getLocation(node), "Invalid table name " +
-                            "in query statement. Query statement, '$query' should contain table name : " +
-                            " $tableName")
-                }
-            }
+      // Skipping list of tables for now
+      if (tableName != null && query != null) {
+        if (!query.toString().contains(tableName.toString(), true)) {
+          context.report(ISSUE, node, context.getLocation(node), "Invalid table name " +
+                  "in query statement. Query statement, '$query' should contain table name : " +
+                  " $tableName")
         }
+      }
     }
+  }
 
 }
